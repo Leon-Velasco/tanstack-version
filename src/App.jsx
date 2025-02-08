@@ -1,95 +1,61 @@
 import dayjs from 'dayjs';
 //import data from './MOCK_DATA.json';
-import data from './SDI121109B14_2024_12.json';
+//import data from './SDI121109B14_2024_12.json';
 import SimpleTable from './components/SimpleTable';
-  
+import { useState, useEffect } from 'react';
+
 function App() {
 
-  const columns = [
-    {
-      header: 'UUID',
-      accessorKey: 'UUID',
-      footer: 'UUID'
-    },
-    {
-      header: 'FECHA EMISION',
-      accessorKey: 'FECHA_EMISION',
-      footer: 'FECHA EMISION',
-      cell: info => dayjs(info.getValue()).format('DD/MM/YYYY')
-    }, 
-    {
-      header: 'RFC EMISOR',
-      accessorKey: 'RFC_EMISOR',
-      footer: 'RFC_EMISOR'
-    }, 
-    {
-      header: 'NAME EMISOR',
-      accessorKey: 'NAME_EMISOR',
-      footer: 'NAME EMISOR'
-    },
-    {
-      header: 'RFC RECEPTOR',
-      accessorKey: 'RFC_RECEPTOR',
-      footer: 'RFC RECEPTOR'
-    },
-    {
-      header: 'NAME RECEPTOR',
-      accessorKey: 'NAME_RECEPTOR',
-      footer: 'NAME_RECEPTOR'
-    },
-    {
-      header: 'FECHA CERT SAT',
-      accessorKey: 'FECHA_CERT_SAT',
-      footer: 'FECHA CERT SAT',
-      cell: info => dayjs(info.getValue()).format('DD/MM/YYYY')
-    },  
-    {
-      header: 'VERSION',
-      accessorKey: 'VERSION',
-      footer: 'VERSION'
-    },
-    {
-      header: 'TIPO COMPROBANTE',
-      accessorKey: 'TIPO_COMPROBANTE',
-      footer: 'TIPO COMPROBANTE'
-    },
-    {
-      header: 'SERIE',
-      accessorKey: 'SERIE',
-      footer: 'SERIE'
-    },
-    {
-      header: 'FOLIO',
-      accessorKey: 'FOLIO',
-      footer: 'FOLIO'
-    },
-    {
-      header: 'LUGAR EXPEDICION',
-      accessorKey: 'LUGAR_EXPEDICION',
-      footer: 'LUGAR EXPEDICION'
-    },
-    {
-      header: 'METODO PAGO',
-      accessorKey: 'METODO_PAGO',
-      footer: 'METODO PAGO'
-    },
-    {
-      header: 'FORMA PAGO',
-      accessorKey: 'FORMA_PAGO',
-      footer: 'FORMA PAGO'
-    },
-    {
-      header: 'CONDICIONES PAGO',
-      accessorKey: 'CONDICIONES_PAGO',
-      footer: 'CONDICIONES PAGO'
-    }
-  ]
+  const [data, setData] = useState([]);
+  const [columns, setColumns] = useState([]);
+  const baseUrl = 'https://83f3f6c6-226f-469b-96bd-c21c881c23dd.mock.pstmn.io/data-clients?';
+
+  
+  useEffect(() => {
+    const fetchAllData = async () => {
+      let allData = [];
+      
+      for (let i = 0; i < 6; i++) {
+        try {
+          const response = await fetch(`${baseUrl}page=${i + 1}`);       
+          if (!response.ok) throw new Error(`Error en la petición ${i}: ${response.status}`);
+
+          const jsonData = await response.json();
+          allData = [...allData, ...jsonData];
+
+        } catch (error) { console.error(`Error en la petición ${i + 1}:`, error) }
+      }
+
+      if (allData.length > 0) {
+        setData(allData);
+        generateColumns(allData[0]); // Generar columnas dinámicamente
+      }
+    };
+
+    fetchAllData();
+  }, []);
+
+  const generateColumns = (firstRow) => {
+    const generatedColumns = Object.keys(firstRow).map(key => ({
+      header: key.replace(/_/g, ' '),
+      accessorKey: key,
+      footer: key.replace(/_/g, ' '),
+      ...(key.includes('FECHA') && { 
+        cell: info => dayjs(info.getValue()).format('DD/MM/YYYY')
+      })
+    }));
+    setColumns(generatedColumns);
+  };
 
   return (
     <div>
-     <SimpleTable data={data} columns={columns}></SimpleTable>
+      {data.length > 0 ? (
+        <SimpleTable data={data} columns={columns} />
+      ) : (
+        <p>Cargando datos...</p>
+      )}
     </div>
-  )
+  );
 }
 
 export default App
